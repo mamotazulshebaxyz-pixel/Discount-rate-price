@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Price & Discount Converter (10%)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f4f6f8;
+            padding: 30px;
+            margin: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 650px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .box {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        textarea {
+            width: 100%;
+            height: 220px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        textarea:focus {
+            border-color: #e91e63;
+        }
+        #output {
+            background-color: #f9f9f9;
+            color: #222;
+            font-weight: 500;
+        }
+        .btn-container {
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+        .copy-btn {
+            background-color: #e91e63;
+            color: white;
+        }
+        .copy-btn:hover {
+            background-color: #d81b60;
+        }
+        .clear-btn {
+            background-color: #757575;
+            color: white;
+        }
+        .clear-btn:hover {
+            background-color: #616161;
+        }
+        .copy-msg {
+            color: #2e7d32;
+            font-weight: bold;
+            font-size: 14px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Service Price & Discount Converter (10%)</h2>
+    
+    <div class="grid-container">
+        <!-- Input Box -->
+        <div class="box">
+            <label for="input">Input:</label>
+            <textarea id="input" placeholder="এখানে পেস্ট করো..." oninput="processData()"></textarea>
+            <div class="btn-container">
+                <button class="clear-btn" onclick="clearAll()">Clear</button>
+            </div>
+        </div>
+
+        <!-- Output Box -->
+        <div class="box">
+            <label for="output">স্বয়ংক্রিয় আউটপুট (Result):</label>
+            <textarea id="output" readonly placeholder="ফলাফল এখানে দেখাবে..."></textarea>
+            <div class="btn-container">
+                <button class="copy-btn" onclick="copyOutput()">Copy Result</button>
+                <span id="copyMsg" class="copy-msg">Copied!</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function processData() {
+    const input = document.getElementById('input').value;
+    if (!input.trim()) {
+        document.getElementById('output').value = '';
+        return;
+    }
+
+    const lines = input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    
+    let textLines = [];
+    let price = 0;
+
+    lines.forEach(line => {
+        if (line.includes('৳') || line.match(/[\d,]+\.\d{2}/)) {
+            let cleanPrice = line.replace(/[^0-9.]/g, '');
+            price = parseFloat(cleanPrice);
+        } 
+        else if (line.toLowerCase().includes('sft')) {
+            textLines.push(line.replace(/(\d+)\s*-\s*(\d+)\s*sft/i, '$1 sft - $2 sft'));
+        }
+        else if (line.toLowerCase().includes('ltr')) {
+            textLines.push(line.replace(/(\d+)\s*ltr\s*-\s*(\d+)\s*ltr/i, '$1 Ltr - $2 Ltr'));
+        }
+        else {
+            textLines.push(line);
+        }
+    });
+
+    let discountRate = 0.10;
+    let discountedPrice = price ? (price - (price * discountRate)) : 0;
+
+    let formattedRegularPrice = price ? price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00";
+    let roundedDiscountedPrice = Math.round(discountedPrice);
+    let formattedDiscountedPrice = roundedDiscountedPrice ? roundedDiscountedPrice.toLocaleString('en-US') : "0";
+
+    let outputText = textLines.join('\n');
+    
+    if (price) {
+        // ১ লাইন স্পেস নিশ্চিত করতে এখানে \n\n ব্যবহার করা হয়েছে
+        if (outputText.length > 0) outputText += '\n\n';
+        outputText += `Regular price ${formattedRegularPrice} Tk\n`;
+        outputText += `Discounted price ${formattedDiscountedPrice} Tk`;
+    }
+
+    document.getElementById('output').value = outputText;
+}
+
+function copyOutput() {
+    const outputText = document.getElementById('output');
+    if (outputText.value) {
+        outputText.select();
+        document.execCommand('copy');
+        
+        const copyMsg = document.getElementById('copyMsg');
+        copyMsg.style.display = 'inline';
+        setTimeout(() => {
+            copyMsg.style.display = 'none';
+        }, 1000);
+    }
+}
+
+function clearAll() {
+    document.getElementById('input').value = '';
+    document.getElementById('output').value = '';
+}
+</script>
+
+</body>
+</html>
