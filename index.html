@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Price & Discount Converter (10%)</title>
+    <title>Service Price & Discount Converter</title>
     <style>
         * {
             box-sizing: border-box;
@@ -22,10 +22,39 @@
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         }
-        h2 {
-            text-align: center;
-            color: #333;
+        .header-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             margin-bottom: 25px;
+        }
+        h2 {
+            color: #333;
+            margin: 0;
+        }
+        .discount-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: #fff0f5;
+            border: 2px solid #e91e63;
+            border-radius: 6px;
+            padding: 2px 8px;
+        }
+        .discount-input-wrapper input {
+            width: 45px;
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            font-weight: bold;
+            color: #e91e63;
+            text-align: right;
+            outline: none;
+        }
+        .discount-input-wrapper span {
+            font-size: 18px;
+            font-weight: bold;
+            color: #e91e63;
         }
         .grid-container {
             display: grid;
@@ -106,7 +135,13 @@
 <body>
 
 <div class="container">
-    <h2>Service Price & Discount Converter (10%)</h2>
+    <div class="header-title">
+        <h2>Service Price & Discount Converter</h2>
+        <div class="discount-input-wrapper">
+            <input type="number" id="discountPercent" value="10" min="0" max="100" oninput="processData()">
+            <span>%</span>
+        </div>
+    </div>
     
     <div class="grid-container">
         <!-- Input Box -->
@@ -133,6 +168,8 @@
 <script>
 function processData() {
     const input = document.getElementById('input').value;
+    const discountVal = parseFloat(document.getElementById('discountPercent').value) || 0;
+
     if (!input.trim()) {
         document.getElementById('output').value = '';
         return;
@@ -159,7 +196,8 @@ function processData() {
         }
     });
 
-    let discountRate = 0.10;
+    // ম্যানুয়াল ডিসকাউন্ট পার্সেন্টেজ হিসেব
+    let discountRate = discountVal / 100;
     let discountedPrice = price ? (price - (price * discountRate)) : 0;
 
     let formattedRegularPrice = price ? price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00";
@@ -169,7 +207,6 @@ function processData() {
     let outputText = textLines.join('\n');
     
     if (price) {
-        // ১ লাইন স্পেস নিশ্চিত করতে এখানে \n\n ব্যবহার করা হয়েছে
         if (outputText.length > 0) outputText += '\n\n';
         outputText += `Regular price ${formattedRegularPrice} Tk\n`;
         outputText += `Discounted price ${formattedDiscountedPrice} Tk`;
