@@ -178,12 +178,17 @@ function processData() {
     const lines = input.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     
     let textLines = [];
-    let price = 0;
+    let extractedPrices = [];
 
     lines.forEach(line => {
-        if (line.includes('৳') || line.match(/[\d,]+\.\d{2}/)) {
-            let cleanPrice = line.replace(/[^0-9.]/g, '');
-            price = parseFloat(cleanPrice);
+        // লাইনে থাকা সব ডাবলু/টাকা বা দশমিক সংখ্যা বের করা
+        let matches = line.match(/\d+(\.\d+)?/g);
+        
+        if ((line.includes('৳') || line.includes('per') || line.includes('/')) && matches) {
+            matches.forEach(num => {
+                let p = parseFloat(num);
+                if (!isNaN(p)) extractedPrices.push(p);
+            });
         } 
         else if (line.toLowerCase().includes('sft')) {
             textLines.push(line.replace(/(\d+)\s*-\s*(\d+)\s*sft/i, '$1 sft - $2 sft'));
@@ -192,21 +197,35 @@ function processData() {
             textLines.push(line.replace(/(\d+)\s*ltr\s*-\s*(\d+)\s*ltr/i, '$1 Ltr - $2 Ltr'));
         }
         else {
-            textLines.push(line);
+            // 'per' বা কোনো অপ্রয়োজনীয় শব্দ থাকলে বাদ দেবে
+            if (line.toLowerCase() !== 'per' && line !== '/') {
+                textLines.push(line);
+            }
         }
     });
 
-    // ম্যানুয়াল ডিসকাউন্ট পার্সেন্টেজ হিসেব
-    let discountRate = discountVal / 100;
-    let discountedPrice = price ? (price - (price * discountRate)) : 0;
+    let regularPrice = 0;
+    let discountedPrice = 0;
 
-    let formattedRegularPrice = price ? price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00";
+    // যদি ২টি দাম পাওয়া যায় (যেমন: 353.13 এবং 653.13)
+    if (extractedPrices.length >= 2) {
+        regularPrice = Math.max(...extractedPrices); // বড় দামটি Regular Price
+        discountedPrice = Math.min(...extractedPrices); // ছোট দামটি Discounted Price
+    } 
+    // যদি ১টি দাম পাওয়া যায়, তাহলে % অনুযায়ী ক্যালকুলেট হবে
+    else if (extractedPrices.length === 1) {
+        regularPrice = extractedPrices[0];
+        let discountRate = discountVal / 100;
+        discountedPrice = regularPrice - (regularPrice * discountRate);
+    }
+
+    let formattedRegularPrice = regularPrice ? regularPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00";
     let roundedDiscountedPrice = Math.round(discountedPrice);
     let formattedDiscountedPrice = roundedDiscountedPrice ? roundedDiscountedPrice.toLocaleString('en-US') : "0";
 
     let outputText = textLines.join('\n');
     
-    if (price) {
+    if (regularPrice > 0) {
         if (outputText.length > 0) outputText += '\n\n';
         outputText += `Regular price ${formattedRegularPrice} Tk\n`;
         outputText += `Discounted price ${formattedDiscountedPrice} Tk`;
