@@ -108,7 +108,7 @@ function handleInput() {
     saveToHistory();
 }
 
-// সেভ করা ডাটা ফিল্টার করে সাজেশন দেখানো
+// সেভ করা ডাটা ফিল্টার করে সাজেশন দেখানো (Ton, Sft, Ltr সহ)
 function showSuggestions() {
     const inputVal = document.getElementById('input').value.trim().toLowerCase();
     const dropdown = document.getElementById('suggestionsList');
@@ -118,7 +118,6 @@ function showSuggestions() {
         return;
     }
 
-    // ইনপুটের সাথে যেগুলোর মিল আছে তা খুঁজে বের করা
     const matches = savedServices.filter(item => 
         item.toLowerCase().includes(inputVal)
     );
@@ -130,16 +129,28 @@ function showSuggestions() {
 
     dropdown.innerHTML = '';
     matches.forEach(item => {
-        const firstLine = item.split('\n')[0]; // সাজেশনে শুধু প্রথম লাইন (নাম) দেখানো
+        const lines = item.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        
+        let title = lines[0] || '';
+        let capacity = '';
+
+        // দ্বিতীয় লাইনে Ton, Sft বা Ltr আছে কিনা চেক করা
+        if (lines.length > 1) {
+            const secondLine = lines[1];
+            if (/\b(ton|sft|ltr|liter|litre|sqft)\b/i.test(secondLine)) {
+                capacity = ` (${secondLine})`;
+            }
+        }
+
+        const displayLabel = `${title}${capacity}`;
         
         const div = document.createElement('div');
         div.className = 'suggestion-item';
         div.innerHTML = `
-            <span>📌 <strong>${firstLine}</strong></span>
+            <span>📌 <strong>${displayLabel}</strong></span>
             <span class="delete-btn" title="Delete from history">&times;</span>
         `;
 
-        // সাজেশনে ক্লিক করলে পুরো টেক্সট বসবে
         div.onclick = (e) => {
             if (e.target.classList.contains('delete-btn')) {
                 e.stopPropagation();
@@ -157,26 +168,23 @@ function showSuggestions() {
     dropdown.style.display = 'block';
 }
 
-// অটোমেটিক লোকালস্টোরেজে নতুন সার্ভিস সেভ করা
 function saveToHistory() {
     const inputVal = document.getElementById('input').value.trim();
     if (inputVal.length > 5 && (inputVal.includes('৳') || inputVal.includes('Tk') || inputVal.includes('Regular price'))) {
         if (!savedServices.includes(inputVal)) {
-            savedServices.unshift(inputVal); // নতুনটি সামনে রাখা
-            if (savedServices.length > 50) savedServices.pop(); // সর্বোচ্চ ৫০টি সেভ থাকবে
+            savedServices.unshift(inputVal);
+            if (savedServices.length > 50) savedServices.pop();
             localStorage.setItem('sheba_saved_services', JSON.stringify(savedServices));
         }
     }
 }
 
-// সাজেশন থেকে কোনো আইটেম মুছে ফেলা
 function deleteHistoryItem(itemText) {
     savedServices = savedServices.filter(i => i !== itemText);
     localStorage.setItem('sheba_saved_services', JSON.stringify(savedServices));
     showSuggestions();
 }
 
-// বাইরের জায়গায় ক্লিক করলে সাজেশন বন্ধ হওয়া
 document.addEventListener('click', function(e) {
     const dropdown = document.getElementById('suggestionsList');
     const input = document.getElementById('input');
