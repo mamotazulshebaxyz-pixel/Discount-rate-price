@@ -82,7 +82,6 @@
             <label for="input">Input (টাইপ করলে সাজেশন দেখাবে):</label>
             <textarea id="input" placeholder="এখানে টেক্সট পেস্ট করো..." oninput="handleInput()" onfocus="showSuggestions()"></textarea>
             
-            <!-- Suggestion Dropdown List -->
             <div id="suggestionsList" class="suggestions-dropdown"></div>
 
             <div class="btn-container">
@@ -111,7 +110,6 @@ function handleInput() {
     showSuggestions();
 }
 
-// সেভ করা ডাটা ফিল্টার করে সাজেশন দেখানো (Ton, Sft, Ltr সহ)
 function showSuggestions() {
     const inputVal = document.getElementById('input').value.trim().toLowerCase();
     const dropdown = document.getElementById('suggestionsList');
@@ -170,7 +168,6 @@ function showSuggestions() {
     dropdown.style.display = 'block';
 }
 
-// ম্যানুয়ালি সেভ করা বাটন
 function manualSave() {
     const saved = saveToHistory();
     if (saved) {
@@ -180,7 +177,6 @@ function manualSave() {
     }
 }
 
-// সেভ ফাংশন (শুধুমাত্র কল করা হলে কাজ করবে)
 function saveToHistory() {
     const inputVal = document.getElementById('input').value.trim();
     if (inputVal.length > 3) {
@@ -222,13 +218,17 @@ function processData() {
     let extractedPrices = [];
 
     lines.forEach(line => {
-        let matches = line.match(/\d+(\.\d+)?/g);
-        
-        if ((line.includes('৳') || line.includes('per') || line.includes('/')) && matches) {
-            matches.forEach(num => {
-                let p = parseFloat(num);
-                if (!isNaN(p)) extractedPrices.push(p);
-            });
+        // প্রাইস লাইন (৳ বা Tk থাকা লাইন) আলাদা হ্যান্ডেল করা
+        if (line.includes('৳') || line.includes('Tk') || line.includes('/')) {
+            // কমা (,) মুছে ফেলে শুধু সংখ্যা বের করা
+            let cleanLine = line.replace(/,/g, '');
+            let matches = cleanLine.match(/\d+(\.\d+)?/g);
+            if (matches) {
+                matches.forEach(num => {
+                    let p = parseFloat(num);
+                    if (!isNaN(p)) extractedPrices.push(p);
+                });
+            }
         } 
         else if (line.toLowerCase().includes('sft')) {
             textLines.push(line.replace(/(\d+)\s*-\s*(\d+)\s*sft/i, '$1 sft - $2 sft'));
@@ -274,14 +274,12 @@ function processData() {
     document.getElementById('output').value = outputText;
 }
 
-// Copy বাটনে ক্লিক করলে ফলাফল কপি হওয়ার সাথে সাথে লিস্টেও সেভ হবে
 function copyOutput() {
     const outputText = document.getElementById('output');
     if (outputText.value) {
         outputText.select();
         document.execCommand('copy');
         
-        // সেভ করা
         saveToHistory();
 
         const copyMsg = document.getElementById('copyMsg');
