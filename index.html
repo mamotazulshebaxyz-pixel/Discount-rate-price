@@ -57,11 +57,13 @@
         }
         .delete-btn:hover { color: #ff0000; }
 
-        .btn-container { margin-top: 15px; display: flex; align-items: center; gap: 10px; }
+        .btn-container { margin-top: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         button { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; }
         .copy-btn { background-color: #e91e63; color: white; }
+        .save-btn { background-color: #4caf50; color: white; }
         .clear-btn { background-color: #757575; color: white; }
         .copy-msg { color: #2e7d32; font-weight: bold; font-size: 14px; display: none; }
+        .save-msg { color: #2e7d32; font-weight: bold; font-size: 13px; display: none; }
     </style>
 </head>
 <body>
@@ -77,14 +79,16 @@
 
     <div class="grid-container">
         <div class="box">
-            <label for="input">Input (সেভ হওয়া সার্ভিস সাজেশন দেখতে টাইপ করো):</label>
+            <label for="input">Input (টাইপ করলে সাজেশন দেখাবে):</label>
             <textarea id="input" placeholder="এখানে টেক্সট পেস্ট করো..." oninput="handleInput()" onfocus="showSuggestions()"></textarea>
             
             <!-- Suggestion Dropdown List -->
             <div id="suggestionsList" class="suggestions-dropdown"></div>
 
             <div class="btn-container">
+                <button class="save-btn" onclick="manualSave()">Save to List</button>
                 <button class="clear-btn" onclick="clearAll()">Clear</button>
+                <span id="saveMsg" class="save-msg">Saved!</span>
             </div>
         </div>
 
@@ -105,7 +109,6 @@ let savedServices = JSON.parse(localStorage.getItem('sheba_saved_services')) || 
 function handleInput() {
     processData();
     showSuggestions();
-    saveToHistory();
 }
 
 // সেভ করা ডাটা ফিল্টার করে সাজেশন দেখানো (Ton, Sft, Ltr সহ)
@@ -134,7 +137,6 @@ function showSuggestions() {
         let title = lines[0] || '';
         let capacity = '';
 
-        // দ্বিতীয় লাইনে Ton, Sft বা Ltr আছে কিনা চেক করা
         if (lines.length > 1) {
             const secondLine = lines[1];
             if (/\b(ton|sft|ltr|liter|litre|sqft)\b/i.test(secondLine)) {
@@ -168,15 +170,28 @@ function showSuggestions() {
     dropdown.style.display = 'block';
 }
 
+// ম্যানুয়ালি সেভ করা বাটন
+function manualSave() {
+    const saved = saveToHistory();
+    if (saved) {
+        const saveMsg = document.getElementById('saveMsg');
+        saveMsg.style.display = 'inline';
+        setTimeout(() => saveMsg.style.display = 'none', 1200);
+    }
+}
+
+// সেভ ফাংশন (শুধুমাত্র কল করা হলে কাজ করবে)
 function saveToHistory() {
     const inputVal = document.getElementById('input').value.trim();
-    if (inputVal.length > 5 && (inputVal.includes('৳') || inputVal.includes('Tk') || inputVal.includes('Regular price'))) {
+    if (inputVal.length > 3) {
         if (!savedServices.includes(inputVal)) {
             savedServices.unshift(inputVal);
             if (savedServices.length > 50) savedServices.pop();
             localStorage.setItem('sheba_saved_services', JSON.stringify(savedServices));
+            return true;
         }
     }
+    return false;
 }
 
 function deleteHistoryItem(itemText) {
@@ -259,11 +274,16 @@ function processData() {
     document.getElementById('output').value = outputText;
 }
 
+// Copy বাটনে ক্লিক করলে ফলাফল কপি হওয়ার সাথে সাথে লিস্টেও সেভ হবে
 function copyOutput() {
     const outputText = document.getElementById('output');
     if (outputText.value) {
         outputText.select();
         document.execCommand('copy');
+        
+        // সেভ করা
+        saveToHistory();
+
         const copyMsg = document.getElementById('copyMsg');
         copyMsg.style.display = 'inline';
         setTimeout(() => copyMsg.style.display = 'none', 1000);
