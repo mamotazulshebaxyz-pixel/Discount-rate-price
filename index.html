@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Price & Discount Converter</title>
+    <title>Sheba.xyz Live Service Search & Discount Tool</title>
     <style>
         * {
             box-sizing: border-box;
@@ -27,7 +27,7 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         h2 {
             color: #333;
@@ -56,6 +56,38 @@
             font-weight: bold;
             color: #e91e63;
         }
+
+        /* Search Section Style */
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+        }
+        .search-box input:focus {
+            border-color: #e91e63;
+        }
+        .search-btn {
+            background-color: #e91e63;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .search-btn:hover {
+            background-color: #d81b60;
+        }
+
         .grid-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -130,6 +162,11 @@
             font-size: 14px;
             display: none;
         }
+        .status-msg {
+            color: #888;
+            font-size: 13px;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -142,18 +179,22 @@
             <span>%</span>
         </div>
     </div>
-    
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Sheba.xyz সার্ভিস নাম লিখে সার্চ করুন (যেমন: Cockroach Control)...">
+        <button class="search-btn" onclick="fetchShebaService()">Live Search</button>
+    </div>
+    <div id="status" class="status-msg"></div>
+
     <div class="grid-container">
-        <!-- Input Box -->
         <div class="box">
             <label for="input">Input:</label>
-            <textarea id="input" placeholder="এখানে পেস্ট করো..." oninput="processData()"></textarea>
+            <textarea id="input" placeholder="সরাসরি তথ্য পেস্ট করো অথবা উপরে সার্চ করো..." oninput="processData()"></textarea>
             <div class="btn-container">
                 <button class="clear-btn" onclick="clearAll()">Clear</button>
             </div>
         </div>
 
-        <!-- Output Box -->
         <div class="box">
             <label for="output">স্বয়ংক্রিয় আউটপুট (Result):</label>
             <textarea id="output" readonly placeholder="ফলাফল এখানে দেখাবে..."></textarea>
@@ -166,6 +207,50 @@
 </div>
 
 <script>
+async function fetchShebaService() {
+    const query = document.getElementById('searchInput').value.trim();
+    const status = document.getElementById('status');
+    
+    if (!query) {
+        status.innerText = "অনুগ্রহ করে সার্ভিসের নাম লিখুন!";
+        return;
+    }
+
+    status.innerText = "Sheba.xyz থেকে লাইভ ডাটা খোঁজা হচ্ছে...";
+
+    try {
+        // CORS Proxy ব্যবহার করে Sheba.xyz API/সার্চ পেজ থেকে ডাটা ফেচ করা
+        const targetUrl = `https://api.sheba.xyz/v2/services?remember_token=false&search=${encodeURIComponent(query)}`;
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+
+        if (data && data.services && data.services.length > 0) {
+            const service = data.services[0]; // প্রথম সার্ভিস রেজাল্ট নেওয়া হলো
+
+            let serviceName = service.name || query;
+            let price = service.variable_type === 'fixed' ? service.price : (service.min_price || service.price);
+            let cap = service.cap_unit ? `${service.min_quantity || 1}-${service.max_quantity || 1000} ${service.cap_unit}` : '';
+
+            // ইনপুট ফিল্ডে ডাটা সেট করা
+            let formattedInput = `${serviceName}\n`;
+            if (cap) formattedInput += `${cap}\n`;
+            formattedInput += `৳ ${price}`;
+
+            document.getElementById('input').value = formattedInput;
+            processData(); // আউটপুট তৈরি করবে
+
+            status.innerText = "ডাটা সফলভাবে আনা হয়েছে!";
+        } else {
+            status.innerText = "কোনো সার্ভিস খুঁজে পাওয়া যায়নি। অন্য নাম দিয়ে চেষ্টা করুন।";
+        }
+    } catch (error) {
+        console.error(error);
+        status.innerText = "লাইভ ডাটা আনতে সমস্যা হয়েছে। ম্যানুয়ালি পেস্ট করে চেষ্টা করতে পারেন।";
+    }
+}
+
 function processData() {
     const input = document.getElementById('input').value;
     const discountVal = parseFloat(document.getElementById('discountPercent').value) || 0;
@@ -181,7 +266,6 @@ function processData() {
     let extractedPrices = [];
 
     lines.forEach(line => {
-        // লাইনে থাকা সব ডাবলু/টাকা বা দশমিক সংখ্যা বের করা
         let matches = line.match(/\d+(\.\d+)?/g);
         
         if ((line.includes('৳') || line.includes('per') || line.includes('/')) && matches) {
@@ -197,7 +281,6 @@ function processData() {
             textLines.push(line.replace(/(\d+)\s*ltr\s*-\s*(\d+)\s*ltr/i, '$1 Ltr - $2 Ltr'));
         }
         else {
-            // 'per' বা কোনো অপ্রয়োজনীয় শব্দ থাকলে বাদ দেবে
             if (line.toLowerCase() !== 'per' && line !== '/') {
                 textLines.push(line);
             }
@@ -207,12 +290,10 @@ function processData() {
     let regularPrice = 0;
     let discountedPrice = 0;
 
-    // যদি ২টি দাম পাওয়া যায় (যেমন: 353.13 এবং 653.13)
     if (extractedPrices.length >= 2) {
-        regularPrice = Math.max(...extractedPrices); // বড় দামটি Regular Price
-        discountedPrice = Math.min(...extractedPrices); // ছোট দামটি Discounted Price
+        regularPrice = Math.max(...extractedPrices);
+        discountedPrice = Math.min(...extractedPrices);
     } 
-    // যদি ১টি দাম পাওয়া যায়, তাহলে % অনুযায়ী ক্যালকুলেট হবে
     else if (extractedPrices.length === 1) {
         regularPrice = extractedPrices[0];
         let discountRate = discountVal / 100;
@@ -251,6 +332,8 @@ function copyOutput() {
 function clearAll() {
     document.getElementById('input').value = '';
     document.getElementById('output').value = '';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('status').innerText = '';
 }
 </script>
 
