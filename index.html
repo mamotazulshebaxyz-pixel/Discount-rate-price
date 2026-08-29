@@ -71,8 +71,8 @@
 </div>
 
 <script>
-// ⚠️ নিচে উদ্ধৃতি চিহ্নের (" ") ভেতরে তোমার Render থেকে পাওয়া আসল URL-টি বসাও
-const BACKEND_URL = "https://sheba-backend-xxxx.onrender.com";
+// Render Backend URL (Set successfully)
+const BACKEND_URL = "https://sheba-backend-yzlm.onrender.com";
 
 async function fetchShebaService() {
     const query = document.getElementById('searchInput').value.trim();
@@ -116,7 +116,7 @@ async function fetchShebaService() {
         }
     } catch (error) {
         console.error(error);
-        status.innerText = "সার্ভারে সংযোগ দেওয়া যাচ্ছে না। URL ঠিক আছে কিনা চেক করো।";
+        status.innerText = "সার্ভারে সংযোগ দেওয়া যাচ্ছে না। অনুগ্রহ করে কিছুক্ষণ পর আবার চেষ্টা করুন।";
     }
 }
 
